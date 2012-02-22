@@ -14,6 +14,7 @@ class PersistentSession {
 	static mapping = {
 		id generator: 'assigned'
 		version false // be sure to lock when changing invalidated but ok to have concurrent updates of lastAccessedTime
+		dynamicUpdate true
 	}
 
 	boolean isValid() {
