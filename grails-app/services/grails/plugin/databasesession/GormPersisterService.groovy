@@ -83,10 +83,9 @@ class GormPersisterService implements Persister {
 		if (name == null) return
 
 		try {
-			PersistentSession ps = PersistentSession.get(sessionId)
-			checkInvalidated ps
-
-			ps.lastAccessedTime = System.currentTimeMillis()
+			PersistentSession session = PersistentSession.get(sessionId)
+			checkInvalidated session
+			session.lastAccessedTime = System.currentTimeMillis()
 
 			PersistentSessionAttributeValue.remove sessionId, name
 			PersistentSessionAttribute.remove sessionId, name
@@ -109,7 +108,7 @@ class GormPersisterService implements Persister {
 		try {
 			PersistentSessionAttributeValue.deleteBySessionId sessionId
 			PersistentSessionAttribute.deleteBySessionId sessionId
-			PersistentSession.get(sessionId)?.invalidated = true
+			PersistentSession.lock(sessionId)?.invalidated = true
 		}
 		catch (e) {
 			handleException e
