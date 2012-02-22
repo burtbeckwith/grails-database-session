@@ -8,6 +8,8 @@ import grails.validation.ValidationException
  */
 class GormPersisterService implements Persister {
 
+	def grailsApplication
+
 	void create(String sessionId) {
 		try {
 			if (PersistentSession.exists(sessionId)) {
@@ -108,7 +110,17 @@ class GormPersisterService implements Persister {
 		try {
 			PersistentSessionAttributeValue.deleteBySessionId sessionId
 			PersistentSessionAttribute.deleteBySessionId sessionId
-			PersistentSession.lock(sessionId)?.invalidated = true
+
+			PersistentSession session = PersistentSession.lock(sessionId)
+
+			def conf = grailsApplication.config.grails.plugin.databasesession
+			def deleteInvalidSessions = conf.deleteInvalidSessions ?: false
+			if (deleteInvalidSessions) {
+				session?.delete()
+			}
+			else {
+				session?.invalidated = true
+			}
 		}
 		catch (e) {
 			handleException e

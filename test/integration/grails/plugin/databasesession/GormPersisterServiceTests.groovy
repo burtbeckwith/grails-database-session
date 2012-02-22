@@ -4,8 +4,14 @@ class GormPersisterServiceTests extends GroovyTestCase {
 
 	GormPersisterService gormPersisterService
 	def sessionFactory
+	def grailsApplication
 
 	private String id = 'abc'
+
+	protected void setUp() {
+		super.setUp()
+		grailsApplication.config.grails.plugin.databasesession.deleteInvalidSessions = false
+	}
 
 	void testCreateNew() {
 
@@ -147,7 +153,7 @@ class GormPersisterServiceTests extends GroovyTestCase {
 		assertEquals(['bar', 'baz', 'foo'], gormPersisterService.getAttributeNames(id).sort())
 	}
 
-	void testInvalidate() {
+	void testInvalidateNotDeleting() {
 		gormPersisterService.create id
 		gormPersisterService.setAttribute id, 'foo', 42
 		gormPersisterService.setAttribute id, 'bar', 'wahoo'
@@ -155,11 +161,41 @@ class GormPersisterServiceTests extends GroovyTestCase {
 		gormPersisterService.invalidate id
 
 		assertTrue PersistentSession.get(id).invalidated
-		assertEquals 0, PersistentSessionAttribute.countBySession(PersistentSession.load(id))
+
+		checkAttributes()
 
 		shouldFail(InvalidatedSessionException) {
 			gormPersisterService.getLastAccessedTime id
 		}
+	}
+
+	void testInvalidateDeleting() {
+		grailsApplication.config.grails.plugin.databasesession.deleteInvalidSessions = true
+
+		gormPersisterService.create id
+		gormPersisterService.setAttribute id, 'foo', 42
+		gormPersisterService.setAttribute id, 'bar', 'wahoo'
+
+		gormPersisterService.invalidate id
+
+		assertNull PersistentSession.get(id)
+
+		checkAttributes()
+
+		shouldFail(InvalidatedSessionException) {
+			gormPersisterService.getLastAccessedTime id
+		}
+	}
+
+	private void checkAttributes() {
+		assertEquals 0, PersistentSessionAttribute.executeQuery(
+			'select count(*) from PersistentSessionAttribute psa where psa.session.id=:sessionId',
+			[sessionId: id])[0]
+
+		assertEquals 0, PersistentSessionAttribute.executeQuery(
+			'select count(*) from PersistentSessionAttributeValue psav ' +
+			'where psav.attribute.session.id=:sessionId',
+			[sessionId: id])[0]
 	}
 
 	void testGetLastAccessedTime() {
