@@ -27,6 +27,8 @@ class DatabaseCleanupService {
 			log.debug "using max age $maxAge minute(s), found old sessions to remove: $ids"
 		}
 
+		PersistentSessionAttributeValue.deleteBySessionIds ids
+
 		PersistentSessionAttribute.deleteBySessionIds ids
 
 		PersistentSession.deleteByIds ids

@@ -14,22 +14,49 @@ import javax.servlet.http.HttpSessionContext;
 @SuppressWarnings("deprecation")
 public class SessionProxy implements HttpSession {
 
-	private final HttpSession _session;
 	private final Persister _persister;
+	private final String _sessionId;
+	private final long _creationTime = System.currentTimeMillis();
+	private final ServletContext _servletContext;
+
+	private static final HttpSessionContext SESSION_CONTEXT = new HttpSessionContext() {
+		public HttpSession getSession(String sessionId) {
+			return null;
+		}
+		public Enumeration<String> getIds() {
+			return SESSION_CONTEXT_ID_ENUM;
+		}
+	};
+
+	private static final Enumeration<String> SESSION_CONTEXT_ID_ENUM = new Enumeration<String>() {
+		public String nextElement() {
+			return null;
+		}
+		public boolean hasMoreElements() {
+			return false;
+		}
+	};
 
 	/**
 	 * Constructor.
-	 * @param session the real session
+	 * @param servletContext the ServletContext
 	 * @param persister the persister
+	 * @param sessionId session id
 	 */
-	public SessionProxy(final HttpSession session, final Persister persister) {
-		_session = session;
+	public SessionProxy(final ServletContext servletContext, final Persister persister, String sessionId) {
+		_servletContext = servletContext;
 		_persister = persister;
-		_persister.create(session.getId(), session.getCreationTime());
+		_sessionId = sessionId;
 	}
 
 	public Object getAttribute(String name) {
-		return _persister.getAttribute(_session.getId(), name, _session.getLastAccessedTime());
+		try {
+			return _persister.getAttribute(_sessionId, name);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public Object getValue(String name) {
@@ -38,25 +65,42 @@ public class SessionProxy implements HttpSession {
 
 	public Enumeration<String> getAttributeNames() {
 
-		final Iterator<String> iterator = _persister.getAttributeNames(_session.getId()).iterator();
-
-		return new Enumeration<String>() {
-			public boolean hasMoreElements() {
-				return iterator.hasNext();
-			}
-			public String nextElement() {
-				return iterator.next();
-			}
-		};
+		try {
+			final Iterator<String> iterator = _persister.getAttributeNames(_sessionId).iterator();
+			return new Enumeration<String>() {
+				public boolean hasMoreElements() {
+					return iterator.hasNext();
+				}
+				public String nextElement() {
+					return iterator.next();
+				}
+			};
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public String[] getValueNames() {
-		List<String> names = _persister.getAttributeNames(_session.getId());
-		return names.toArray(new String[names.size()]);
+		try {
+			List<String> names = _persister.getAttributeNames(_sessionId);
+			return names.toArray(new String[names.size()]);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public void setAttribute(String name, Object value) {
-		_persister.setAttribute(_session.getId(), name, value, _session.getLastAccessedTime());
+		try {
+			_persister.setAttribute(_sessionId, name, value);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public void putValue(String name, Object value) {
@@ -64,7 +108,13 @@ public class SessionProxy implements HttpSession {
 	}
 
 	public void removeAttribute(String name) {
-		_persister.removeAttribute(_session.getId(), name, _session.getLastAccessedTime());
+		try {
+			_persister.removeAttribute(_sessionId, name);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public void removeValue(String name) {
@@ -72,39 +122,56 @@ public class SessionProxy implements HttpSession {
 	}
 
 	public long getCreationTime() {
-		return _session.getCreationTime();
+		return _creationTime;
 	}
 
 	public String getId() {
-		return _session.getId();
+		return _sessionId;
 	}
 
 	public long getLastAccessedTime() {
-		return _session.getLastAccessedTime();
+		try {
+			return _persister.getLastAccessedTime(_sessionId);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public ServletContext getServletContext() {
-		return _session.getServletContext();
+		return _servletContext;
 	}
 
 	public void setMaxInactiveInterval(int interval) {
-		_session.setMaxInactiveInterval(interval);
+		try {
+			_persister.setMaxInactiveInterval(_sessionId, interval);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public int getMaxInactiveInterval() {
-		return _session.getMaxInactiveInterval();
+		try {
+			return _persister.getMaxInactiveInterval(_sessionId);
+		}
+		catch (InvalidatedSessionException e) {
+			invalidate();
+			throw new IllegalStateException("Session already invalidated");
+		}
 	}
 
 	public HttpSessionContext getSessionContext() {
-		return _session.getSessionContext();
+		return SESSION_CONTEXT;
 	}
 
 	public void invalidate() {
-		_persister.invalidate(_session.getId());
-		_session.invalidate();
+		_persister.invalidate(_sessionId);
 	}
 
 	public boolean isNew() {
-		return _session.isNew();
+		return false; // TODO
 	}
 }

@@ -1,80 +1,104 @@
 package grails.plugin.databasesession
 
 import grails.util.GrailsUtil
+import grails.validation.ValidationException
 
 /**
  * @author Burt Beckwith
  */
 class GormPersisterService implements Persister {
 
-	void create(String sessionId, long creationTime) {
+	void create(String sessionId) {
 		try {
 			if (PersistentSession.exists(sessionId)) {
 				return
 			}
 
 			PersistentSession session = new PersistentSession()
-			session.creationTime = creationTime
-			session.lastAccessedTime = creationTime
+			session.creationTime = System.currentTimeMillis()
+			session.lastAccessedTime = session.creationTime
 			session.id = sessionId
-			session.save()
+			session.save(failOnError: true)
 		}
 		catch (e) {
 			handleException e
 		}
 	}
 
-	Object getAttribute(String sessionId, String name, long lastAccessedTime) {
+	Object getAttribute(String sessionId, String name) throws InvalidatedSessionException {
+		if (name == null) return null
+
 		try {
-			PersistentSessionAttribute attr = get(sessionId, name)
-			if (!attr) {
-				return null
+			PersistentSession session = PersistentSession.get(sessionId)
+			checkInvalidated session
+			session.lastAccessedTime = System.currentTimeMillis()
+
+			PersistentSessionAttributeValue.findBySessionAndAttributeName(session, name)?.value
+		}
+		catch (e) {
+			handleException e
+		}
+	}
+
+	void setAttribute(String sessionId, String name, value) throws InvalidatedSessionException {
+
+		if (name == null) {
+			throw new IllegalArgumentException('name parameter cannot be null')
+		}
+
+		if (value == null) {
+			removeAttribute sessionId, name
+			return
+		}
+
+		try {
+			PersistentSession session = PersistentSession.get(sessionId)
+			checkInvalidated session
+			session.lastAccessedTime = System.currentTimeMillis()
+
+			def attr = PersistentSessionAttribute.findBySessionAndName(session, name)
+
+			PersistentSessionAttributeValue psav
+			if (attr) {
+				psav = PersistentSessionAttributeValue.findByAttribute(attr)
+			}
+			else {
+				attr = new PersistentSessionAttribute()
+				attr.session = session
+				attr.name = name
+				attr.save(failOnError: true)
+				psav = new PersistentSessionAttributeValue()
+				psav.attribute = attr
 			}
 
-			attr.session.lastAccessedTime = lastAccessedTime
-			return attr.value
+			psav.value = value
+			psav.save(failOnError: true)
 		}
 		catch (e) {
 			handleException e
 		}
 	}
 
-	void setAttribute(String sessionId, String name, value, long lastAccessedTime) {
+	void removeAttribute(String sessionId, String name) throws InvalidatedSessionException {
+		if (name == null) return
+
 		try {
-			def attr = get(sessionId, name)
-			if (!attr) {
-				attr = new PersistentSessionAttribute(
-					session: PersistentSession.get(sessionId), name: name)
-			}
-			attr.session.lastAccessedTime = lastAccessedTime
-			attr.value = value
-			attr.save()
+			PersistentSession ps = PersistentSession.get(sessionId)
+			checkInvalidated ps
+
+			ps.lastAccessedTime = System.currentTimeMillis()
+
+			PersistentSessionAttributeValue.remove sessionId, name
+			PersistentSessionAttribute.remove sessionId, name
 		}
 		catch (e) {
 			handleException e
 		}
 	}
 
-	void removeAttribute(String sessionId, String name, long lastAccessedTime) {
+	List<String> getAttributeNames(String sessionId) throws InvalidatedSessionException {
 		try {
-			PersistentSession.get(sessionId).lastAccessedTime = lastAccessedTime
-
-			PersistentSessionAttribute.executeUpdate(
-				'delete from PersistentSessionAttribute psa ' +
-				'where psa.session.id=:sessionId and psa.name=:name',
-				[sessionId: sessionId, name: name])
-		}
-		catch (e) {
-			handleException e
-		}
-	}
-
-	List<String> getAttributeNames(String sessionId) {
-		try {
-			PersistentSessionAttribute.executeQuery(
-				'select psa.name from PersistentSessionAttribute psa ' +
-				'where psa.session.id=:sessionId',
-				[sessionId: sessionId])
+			PersistentSessionAttribute.findAllNames sessionId
 		}
 		catch (e) {
 			handleException e
@@ -83,27 +107,60 @@ class GormPersisterService implements Persister {
 
 	void invalidate(String sessionId) {
 		try {
-			PersistentSessionAttribute.executeUpdate(
-				'delete from PersistentSessionAttribute psa ' +
-				'where psa.session.id=:sessionId',
-				[sessionId: sessionId])
-
-			PersistentSession.executeUpdate(
-				'delete from PersistentSession ps where ps.id=:id',
-				[id: sessionId])
+			PersistentSessionAttributeValue.deleteBySessionId sessionId
+			PersistentSessionAttribute.deleteBySessionId sessionId
+			PersistentSession.get(sessionId)?.invalidated = true
 		}
 		catch (e) {
 			handleException e
 		}
 	}
 
-	protected PersistentSessionAttribute get(String sessionId, String name) {
-		PersistentSessionAttribute.findBySessionAndName(
-			PersistentSession.get(sessionId), name)
+	long getLastAccessedTime(String sessionId) throws InvalidatedSessionException {
+		PersistentSession ps = PersistentSession.get(sessionId)
+		checkInvalidated ps
+		ps.lastAccessedTime
+	}
+
+	void setMaxInactiveInterval(String sessionId, int interval) throws InvalidatedSessionException {
+		PersistentSession ps = PersistentSession.get(sessionId)
+		checkInvalidated ps
+
+		ps.maxInactiveInterval = interval
+		if (interval == 0) {
+			invalidate sessionId
+		}
+	}
+
+	int getMaxInactiveInterval(String sessionId) throws InvalidatedSessionException {
+		PersistentSession ps = PersistentSession.get(sessionId)
+		checkInvalidated ps
+		ps.maxInactiveInterval
+	}
+
+	boolean isValid(String sessionId) {
+		PersistentSession session = PersistentSession.get(sessionId)
+		session && session.isValid()
 	}
 
 	protected void handleException(e) {
+		if (e instanceof InvalidatedSessionException || e instanceof ValidationException) {
+			throw e
+		}
 		GrailsUtil.deepSanitize e
 		log.error e.message, e
+	}
+
+	protected void checkInvalidated(PersistentSession ps) {
+		if (!ps || ps.invalidated) {
+			throw new InvalidatedSessionException()
+		}
+	}
+
+	protected void checkInvalidated(String sessionId) {
+		Boolean invalidated = PersistentSession.isInvalidated(sessionId)
+		if (invalidated == null || invalidated) {
+			throw new InvalidatedSessionException()
+		}
 	}
 }
