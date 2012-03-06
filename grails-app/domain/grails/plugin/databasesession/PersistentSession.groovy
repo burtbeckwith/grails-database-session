@@ -10,6 +10,8 @@ class PersistentSession {
 	Long lastAccessedTime
 	Boolean invalidated = false
 	Integer maxInactiveInterval = 30
+	
+	static transients = ['valid']
 
 	static mapping = {
 		id generator: 'assigned'
