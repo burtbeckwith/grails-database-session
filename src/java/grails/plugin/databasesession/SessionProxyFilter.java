@@ -68,7 +68,8 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 
 			// no session cookie but do create
 			log.debug("No session cookie but create is true, creating session");
-			createSession(request, response);
+			sessionId = createSession(request, response);
+			return new SessionProxy(getServletContext(), persister, sessionId);
 		}
 
 		if (persister.isValid(sessionId)) {
@@ -130,7 +131,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 		}
 		else {
 			log.debug("Updating existing cookie with id {} to new value {}", cookie.getValue(), sessionId);
-			cookie.setValue(sessionId);
+			cookie = newCookie(sessionId, request);
 		}
 		response.addCookie(cookie);
 	}
