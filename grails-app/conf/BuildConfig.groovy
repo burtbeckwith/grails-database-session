@@ -9,4 +9,9 @@ grails.project.dependency.resolution = {
 	repositories {
 		grailsCentral()
 	}
+
+    plugins {
+        compile ":hibernate:2.0.1"
+
+    }
 }
