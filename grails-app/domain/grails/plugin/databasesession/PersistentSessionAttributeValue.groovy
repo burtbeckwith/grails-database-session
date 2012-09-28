@@ -17,7 +17,6 @@ class PersistentSessionAttributeValue {
         if (serialized) {
             ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized)) {
                 protected Class resolveClass(ObjectStreamClass objectStreamClass) throws IOException, ClassNotFoundException {
-
                     return Class.forName(objectStreamClass.getName(), true, this.getClass().getClassLoader());
                 }
             };

@@ -11,7 +11,7 @@ grails.project.dependency.resolution = {
 	}
 
     plugins {
-        compile ":hibernate:2.0.1"
+        compile ":hibernate:2.1.1"
 
     }
 }
