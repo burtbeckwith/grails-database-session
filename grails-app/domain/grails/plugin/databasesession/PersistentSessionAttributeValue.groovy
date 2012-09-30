@@ -14,16 +14,16 @@ class PersistentSessionAttributeValue {
 
 	def getValue() {
 		// might throw IOException - let the caller handle it
-        if (serialized) {
-            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized)) {
-                protected Class resolveClass(ObjectStreamClass objectStreamClass) throws IOException, ClassNotFoundException {
-                    return Class.forName(objectStreamClass.getName(), true, this.getClass().getClassLoader());
-                }
-            };
-            return ois.readObject()
-        } else {
-            return null
-        }
+		if (!serialized) {
+			return null
+		}
+
+		new ObjectInputStream(new ByteArrayInputStream(serialized)) {
+			@Override
+			protected Class<?> resolveClass(ObjectStreamClass objectStreamClass) throws IOException, ClassNotFoundException {
+				Class.forName objectStreamClass.getName(), true, Thread.currentThread().contextClassLoader
+			}
+		}.readObject()
 	}
 
 	void setValue(value) {
