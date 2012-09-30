@@ -39,7 +39,6 @@ class PersistentSessionAttributeValue {
 	}
 
 	static constraints = {
-		serialized maxSize: 20000
 	}
 
 	static PersistentSessionAttributeValue findBySessionAndAttributeName(
