@@ -1,1 +1,0 @@
-This branch is a fork from Burt Beckwith's original plugin.

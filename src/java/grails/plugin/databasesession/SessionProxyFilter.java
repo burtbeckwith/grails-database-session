@@ -126,13 +126,12 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	protected void createCookie(String sessionId, HttpServletRequest request, HttpServletResponse response) {
 		Cookie cookie = getCookie(request);
 		if (cookie == null) {
-			cookie = newCookie(sessionId, request);
 			log.debug("Created new session cookie {}", sessionId);
 		}
 		else {
 			log.debug("Updating existing cookie with id {} to new value {}", cookie.getValue(), sessionId);
-			cookie = newCookie(sessionId, request);
 		}
+		cookie = newCookie(sessionId, request);
 		response.addCookie(cookie);
 	}
 
