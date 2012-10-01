@@ -101,7 +101,7 @@ class GormPersisterService implements Persister {
 
 	List<String> getAttributeNames(String sessionId) throws InvalidatedSessionException {
 		try {
-			persistentSessionService.findAllNames sessionId
+			persistentSessionService.findAllAttributeNames sessionId
 		}
 		catch (e) {
 			handleException e
