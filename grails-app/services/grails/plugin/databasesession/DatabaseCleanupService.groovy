@@ -6,6 +6,7 @@ package grails.plugin.databasesession
 class DatabaseCleanupService {
 
 	def grailsApplication
+	def persistentSessionService
 
 	/**
 	 * Delete PersistentSessions and corresponding PersistentSessionAttributes where
@@ -18,7 +19,7 @@ class DatabaseCleanupService {
 
 		long age = System.currentTimeMillis() - maxAge * 1000 * 60
 
-		def ids = PersistentSession.findAllByLastAccessedOlderThan(age)
+		def ids = persistentSessionService.findAllSessionIdsByLastAccessedOlderThan(age)
 		if (!ids) {
 			return
 		}
@@ -27,10 +28,10 @@ class DatabaseCleanupService {
 			log.debug "using max age $maxAge minute(s), found old sessions to remove: $ids"
 		}
 
-		PersistentSessionAttributeValue.deleteBySessionIds ids
+		persistentSessionService.deleteValuesBySessionIds ids
 
-		PersistentSessionAttribute.deleteBySessionIds ids
+		persistentSessionService.deleteAttributesBySessionIds ids
 
-		PersistentSession.deleteByIds ids
+		persistentSessionService.deleteSessionsByIds ids
 	}
 }

@@ -9,6 +9,7 @@ import grails.validation.ValidationException
 class GormPersisterService implements Persister {
 
 	def grailsApplication
+	def persistentSessionService
 
 	void create(String sessionId) {
 		try {
@@ -35,7 +36,8 @@ class GormPersisterService implements Persister {
 			checkInvalidated session
 			session.lastAccessedTime = System.currentTimeMillis()
 
-			PersistentSessionAttributeValue.findBySessionAndAttributeName(session, name)?.value
+			persistentSessionService.deserializeAttributeValue(
+				persistentSessionService.findValueBySessionAndAttributeName(session, name)?.serialized)
 		}
 		catch (e) {
 			handleException e
@@ -73,7 +75,7 @@ class GormPersisterService implements Persister {
 				psav.attribute = attr
 			}
 
-			psav.value = value
+			psav.serialized = persistentSessionService.serializeAttributeValue(value)
 			psav.save(failOnError: true)
 		}
 		catch (e) {
@@ -89,8 +91,8 @@ class GormPersisterService implements Persister {
 			checkInvalidated session
 			session.lastAccessedTime = System.currentTimeMillis()
 
-			PersistentSessionAttributeValue.remove sessionId, name
-			PersistentSessionAttribute.remove sessionId, name
+			persistentSessionService.removeValue sessionId, name
+			persistentSessionService.removeAttribute sessionId, name
 		}
 		catch (e) {
 			handleException e
@@ -99,7 +101,7 @@ class GormPersisterService implements Persister {
 
 	List<String> getAttributeNames(String sessionId) throws InvalidatedSessionException {
 		try {
-			PersistentSessionAttribute.findAllNames sessionId
+			persistentSessionService.findAllNames sessionId
 		}
 		catch (e) {
 			handleException e
@@ -108,8 +110,8 @@ class GormPersisterService implements Persister {
 
 	void invalidate(String sessionId) {
 		try {
-			PersistentSessionAttributeValue.deleteBySessionId sessionId
-			PersistentSessionAttribute.deleteBySessionId sessionId
+			persistentSessionService.deleteValuesBySessionId sessionId
+			persistentSessionService.deleteAttributesBySessionId sessionId
 
 			PersistentSession session = PersistentSession.lock(sessionId)
 
@@ -169,7 +171,7 @@ class GormPersisterService implements Persister {
 	}
 
 	protected void checkInvalidated(String sessionId) {
-		Boolean invalidated = PersistentSession.isInvalidated(sessionId)
+		Boolean invalidated = persistentSessionService.isSessionInvalidated(sessionId)
 		if (invalidated == null || invalidated) {
 			throw new InvalidatedSessionException()
 		}
