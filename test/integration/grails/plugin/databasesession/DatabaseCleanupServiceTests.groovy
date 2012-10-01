@@ -3,6 +3,7 @@ package grails.plugin.databasesession
 class DatabaseCleanupServiceTests extends GroovyTestCase {
 
 	DatabaseCleanupService databaseCleanupService
+	PersistentSessionService persistentSessionService
 	def grailsApplication
 	def sessionFactory
 
@@ -11,19 +12,19 @@ class DatabaseCleanupServiceTests extends GroovyTestCase {
 
 		def session = new PersistentSession(creationTime: 0, lastAccessedTime: System.currentTimeMillis())
 		session.id = 's1'
-		session.save()
-		def attr = new PersistentSessionAttribute(session: session, name: 'a1').save()
-		new PersistentSessionAttributeValue(attribute: attr, value: 'v1').save()
+		session.save(failOnError: true)
+		def attr = new PersistentSessionAttribute(session: session, name: 'a1').save(failOnError: true)
+		new PersistentSessionAttributeValue(attribute: attr, serialized: persistentSessionService.serializeAttributeValue('v1')).save(failOnError: true)
 
 		session = new PersistentSession(creationTime: 0, lastAccessedTime: System.currentTimeMillis())
 		session.id = 's2'
-		session.save()
-		attr = new PersistentSessionAttribute(session: session, name: 'a2').save()
-		new PersistentSessionAttributeValue(attribute: attr, value: 'v2').save()
+		session.save(failOnError: true)
+		attr = new PersistentSessionAttribute(session: session, name: 'a2').save(failOnError: true)
+		new PersistentSessionAttributeValue(attribute: attr, serialized: persistentSessionService.serializeAttributeValue('v2')).save(failOnError: true)
 
 		session = new PersistentSession(creationTime: 0, lastAccessedTime: System.currentTimeMillis())
 		session.id = 's3'
-		session.save()
+		session.save(failOnError: true)
 
 		flushAndClear()
 	}
