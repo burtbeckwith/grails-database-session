@@ -1,9 +1,6 @@
 package grails.plugin.databasesession;
 
 import java.io.IOException;
-import java.net.HttpCookie;
-import java.util.Iterator;
-import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.FilterChain;
@@ -29,11 +26,11 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 
 	protected static final String COOKIE_NAME = "SessionProxyFilter_SessionId";
 	protected static final String COOKIE_PATH = "/";
-	protected static final String SET_COOKIE = "Set-Cookie";
+	protected static final String REQUEST_COOKIE_KEY = "SessionProxyFilter_REQUEST_COOKIE";
 
 	private Persister persister;
 
-	private Logger log = LoggerFactory.getLogger(getClass());
+	protected Logger log = LoggerFactory.getLogger(getClass());
 
 	@Override
 	protected void doFilterInternal(final HttpServletRequest request,
@@ -63,7 +60,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			log.debug("Proxying request for {}", request.getRequestURL());
 		}
 
-		String sessionId = getCookieValue(request, response);
+		String sessionId = getCookieValue(request);
 		if (sessionId == null) {
 			if (!create) {
 				log.debug("No session cookie but create is false, not creating session");
@@ -110,7 +107,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 		return UUID.randomUUID().toString();
 	}
 
-	protected Cookie getCookie(HttpServletRequest request, HttpServletResponse response) {
+	protected Cookie getCookie(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
@@ -120,57 +117,17 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			}
 		}
 
-		// no cookie, but there might be a Set-Cookie header for a new cookie that hasn't made it to the request yet
-		return parseSetCookieHeader(request, response);
+		// no cookie, but if we're in the same request as when it was set it will be here
+		return (Cookie)request.getAttribute(REQUEST_COOKIE_KEY);
 	}
 
-	protected Cookie parseSetCookieHeader(HttpServletRequest request, HttpServletResponse response) {
-		String setCookie = response.getHeader(SET_COOKIE);
-		if (setCookie == null) {
-			return null;
-		}
-
-		log.trace("Found Set-Cookie header {}", setCookie);
-
-		List<HttpCookie> parsedCookies = HttpCookie.parse(setCookie);
-		for (Iterator<HttpCookie> iter = parsedCookies.listIterator(); iter.hasNext(); ) {
-			HttpCookie c = iter.next();
-			if (!COOKIE_NAME.equals(c.getName())) {
-				iter.remove();
-			}
-		}
-
-		if (parsedCookies.isEmpty()) {
-			return null;
-		}
-
-		if (parsedCookies.size() > 1) {
-			log.debug("Found multiple cookies in Set-Cookie header {}", setCookie);
-			// TODO
-		}
-
-		HttpCookie parsedCookie = parsedCookies.get(0);
-		if (request.getServerName().equals(parsedCookie.getDomain()) &&
-				COOKIE_PATH.equals(parsedCookie.getPath()) &&
-				request.isSecure() == parsedCookie.getSecure()) {
-			log.debug("No Cookie, but found Set-Cookie header id {}", parsedCookie.getValue());
-			return newCookie(parsedCookie.getValue(), request);
-		}
-
-		log.debug("Set-Cookie header mismatch: server {} vs {}, path {} vs {}, secure {} vs {}", new Object[] {
-				request.getServerName(), parsedCookie.getDomain(),
-				COOKIE_PATH, parsedCookie.getPath(),
-				request.isSecure(), parsedCookie.getSecure() });
-		return null;
-	}
-
-	protected String getCookieValue(HttpServletRequest request, HttpServletResponse response) {
-		Cookie cookie = getCookie(request, response);
+	protected String getCookieValue(HttpServletRequest request) {
+		Cookie cookie = getCookie(request);
 		return cookie == null ? null : cookie.getValue();
 	}
 
 	protected void createCookie(String sessionId, HttpServletRequest request, HttpServletResponse response) {
-		Cookie cookie = getCookie(request, response);
+		Cookie cookie = getCookie(request);
 		if (cookie == null) {
 			log.debug("Created new session cookie {}", sessionId);
 		}
@@ -179,6 +136,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 		}
 		cookie = newCookie(sessionId, request);
 		response.addCookie(cookie);
+		request.setAttribute(REQUEST_COOKIE_KEY, cookie);
 	}
 
 	protected Cookie newCookie(String sessionId, HttpServletRequest request) {
@@ -190,7 +148,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	}
 
 	protected void deleteCookie(HttpServletRequest request, HttpServletResponse response) {
-		Cookie cookie = getCookie(request, response);
+		Cookie cookie = getCookie(request);
 		if (cookie == null) {
 			return;
 		}
