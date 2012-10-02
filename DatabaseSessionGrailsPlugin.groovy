@@ -5,7 +5,7 @@ import grails.util.Metadata
 import org.springframework.web.filter.DelegatingFilterProxy
 
 class DatabaseSessionGrailsPlugin {
-	String version = '1.1.3-SNAPSHOT'
+	String version = '1.2'
 	String grailsVersion = '1.3.3 > *'
 	String title = 'Database Session Plugin'
 	String author = 'Burt Beckwith'
