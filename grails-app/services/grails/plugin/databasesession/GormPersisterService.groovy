@@ -3,6 +3,9 @@ package grails.plugin.databasesession
 import grails.util.GrailsUtil
 import grails.validation.ValidationException
 
+import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes
+import org.springframework.util.Assert
+
 /**
  * @author Burt Beckwith
  */
@@ -31,13 +34,27 @@ class GormPersisterService implements Persister {
 	Object getAttribute(String sessionId, String name) throws InvalidatedSessionException {
 		if (name == null) return null
 
+		if (GrailsApplicationAttributes.FLASH_SCOPE == name) {
+			// special case; use request scope since a new deserialized instance is created each time it's retrieved from the session
+			def fs = SessionProxyFilter.request.getAttribute(GrailsApplicationAttributes.FLASH_SCOPE)
+			if (fs != null) {
+				return fs
+			}
+		}
+
 		try {
 			PersistentSession session = PersistentSession.get(sessionId)
 			checkInvalidated session
 			session.lastAccessedTime = System.currentTimeMillis()
 
-			persistentSessionService.deserializeAttributeValue(
+			def attribute = persistentSessionService.deserializeAttributeValue(
 				persistentSessionService.findValueBySessionAndAttributeName(session, name)?.serialized)
+
+			if (attribute != null && GrailsApplicationAttributes.FLASH_SCOPE == name) {
+				SessionProxyFilter.request.setAttribute(GrailsApplicationAttributes.FLASH_SCOPE, attribute)
+			}
+
+			return attribute
 		}
 		catch (e) {
 			handleException e
@@ -46,13 +63,22 @@ class GormPersisterService implements Persister {
 
 	void setAttribute(String sessionId, String name, value) throws InvalidatedSessionException {
 
-		if (name == null) {
-			throw new IllegalArgumentException('name parameter cannot be null')
-		}
+		Assert.notNull name, 'name parameter cannot be null'
 
 		if (value == null) {
 			removeAttribute sessionId, name
 			return
+		}
+
+		// special case; use request scope and don't store in session, the filter will set it in the session at the end of the request
+		if (value != null && GrailsApplicationAttributes.FLASH_SCOPE == name) {
+			if (value != GrailsApplicationAttributes.FLASH_SCOPE) {
+				SessionProxyFilter.request.setAttribute(GrailsApplicationAttributes.FLASH_SCOPE, value)
+				return
+			}
+
+			// the filter set the value as the key, so retrieve it from the request
+			value = SessionProxyFilter.request.getAttribute(GrailsApplicationAttributes.FLASH_SCOPE)
 		}
 
 		try {

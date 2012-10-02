@@ -28,6 +28,9 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	protected static final String COOKIE_PATH = "/";
 	protected static final String REQUEST_COOKIE_KEY = "SessionProxyFilter_REQUEST_COOKIE";
 
+	private static final ThreadLocal<HttpServletRequest> REQUEST_HOLDER = new ThreadLocal<HttpServletRequest>();
+	private static final ThreadLocal<HttpServletResponse> RESPONSE_HOLDER = new ThreadLocal<HttpServletResponse>();
+
 	private Persister persister;
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
@@ -50,7 +53,16 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			}
 		};
 
-		chain.doFilter(requestWrapper, response);
+		REQUEST_HOLDER.set(requestWrapper);
+		RESPONSE_HOLDER.set(response);
+
+		try {
+			chain.doFilter(requestWrapper, response);
+		}
+		finally {
+			REQUEST_HOLDER.remove();
+			RESPONSE_HOLDER.remove();
+		}
 	}
 
 	protected HttpSession proxySession(final boolean create, final HttpServletRequest request,
@@ -169,6 +181,22 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 
 	protected Persister getPersister() {
 		return persister;
+	}
+
+	/**
+	 * Get the current request.
+	 * @return the request
+	 */
+	public static HttpServletRequest getRequest() {
+		return REQUEST_HOLDER.get();
+	}
+
+	/**
+	 * Get the current response.
+	 * @return the response
+	 */
+	public static HttpServletResponse getResponse() {
+		return RESPONSE_HOLDER.get();
 	}
 
 	@Override
