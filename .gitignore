@@ -1,3 +1,4 @@
+.gradle
 *.zip
 /plugin.xml
 *.log

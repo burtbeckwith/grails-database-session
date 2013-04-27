@@ -1,0 +1,19 @@
+buildscript {
+	repositories {
+		maven {
+			url 'http://burtbeckwith.github.io/gradle-grails-wrapper/m2/'
+		}
+	}
+	dependencies {
+		classpath 'com.burtbeckwith.gradle.grails:gradle-grails-wrapper:0.1'
+	}
+}
+
+apply plugin: 'grails'
+
+grails {
+	verbose = true
+	stacktrace = true
+}
+
+defaultTasks 'package-plugin'
