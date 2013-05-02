@@ -24,7 +24,7 @@ class GormPersisterService implements Persister {
 			session.creationTime = System.currentTimeMillis()
 			session.lastAccessedTime = session.creationTime
 			session.id = sessionId
-			session.save(failOnError: true)
+			session.save(failOnError: true, flush: true)
 		}
 		catch (e) {
 			handleException e
