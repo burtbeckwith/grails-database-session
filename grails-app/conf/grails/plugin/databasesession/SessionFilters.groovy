@@ -1,5 +1,6 @@
 package grails.plugin.databasesession
 
+import grails.util.Environment
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes
 
 /**
@@ -14,7 +15,14 @@ class SessionFilters {
 		flash(controller:'*', action:'*') {
 
 			afterView = { Exception e ->
-				if (request.getAttribute(GrailsApplicationAttributes.FLASH_SCOPE) == null) {
+                boolean enabled = DatabaseSessionsEnabledUtility.enabled(grailsApplication.config,
+                        Environment.isDevelopmentMode())
+
+                if(!enabled) {
+                    return
+                }
+
+                if (request.getAttribute(GrailsApplicationAttributes.FLASH_SCOPE) == null) {
 					return
 				}
 

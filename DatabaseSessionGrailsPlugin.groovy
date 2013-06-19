@@ -1,7 +1,7 @@
+import grails.plugin.databasesession.DatabaseSessionsEnabledUtility
 import grails.plugin.databasesession.SessionProxyFilter
 import grails.util.Environment
 import grails.util.Metadata
-
 import org.springframework.web.filter.DelegatingFilterProxy
 
 class DatabaseSessionGrailsPlugin {
@@ -66,10 +66,6 @@ class DatabaseSessionGrailsPlugin {
 	}
 
 	private boolean isEnabled(config) {
-		def enabled = config.grails.plugin.databasesession.enabled
-		if (enabled instanceof Boolean) {
-			return enabled
-		}
-		return !Environment.isDevelopmentMode()
+		DatabaseSessionsEnabledUtility.enabled(config as ConfigObject, Environment.isDevelopmentMode())
 	}
 }
