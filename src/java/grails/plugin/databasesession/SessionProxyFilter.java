@@ -120,6 +120,12 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	}
 
 	protected Cookie getCookie(HttpServletRequest request) {
+		// no cookie, but if we're in the same request as when it was set it will be here
+		Cookie newCookie = (Cookie)request.getAttribute(REQUEST_COOKIE_KEY);
+		if (newCookie != null) {
+			return newCookie;
+		}
+
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
@@ -129,8 +135,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			}
 		}
 
-		// no cookie, but if we're in the same request as when it was set it will be here
-		return (Cookie)request.getAttribute(REQUEST_COOKIE_KEY);
+		return null;
 	}
 
 	protected String getCookieValue(HttpServletRequest request) {
