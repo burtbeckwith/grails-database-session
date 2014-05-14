@@ -26,7 +26,7 @@
 		<link>
 			<name>.link_to_grails_plugins</name>
 			<type>2</type>
-			<locationURI>GRAILS_ROOT/grails-database-session/target/plugins</locationURI>
+			<location>/media/Others/Repos/grails-database-session/target/work/plugins</location>
 		</link>
 	</linkedResources>
 </projectDescription>
