@@ -4,6 +4,12 @@ package grails.plugin.databasesession
  * @author Burt Beckwith
  */
 class PersistentSessionAttribute {
-	PersistentSession session
-	String name
+
+    String name
+    byte[] serialized
+    String sessionId
+
+    static constraints = {
+        serialized maxSize: 20000
+    }
 }
