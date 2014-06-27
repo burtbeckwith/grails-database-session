@@ -68,7 +68,6 @@ class PersistentSessionService {
 	void removeValue(String sessionId, String name) {
 		Assert.hasLength sessionId
 		Assert.hasLength name
-        println ">>>> remove value"
         PersistentSessionAttribute.findAllBySessionIdAndName(sessionId, name)*.delete()
 	}
 
@@ -76,29 +75,24 @@ class PersistentSessionService {
 		if (!ids) {
 			return
 		}
-        println ">>>> delete by ids"
 		PersistentSessionAttribute.getAll(ids)*.delete()
 	}
 
 	void deleteAttributesBySessionId(String sessionId) {
-	    println ">>>> delete by sessoipmod "
         PersistentSessionAttribute.findAllBySessionId(sessionId)*.delete()
 	}
 
 	void deleteAttributesBySessionIds(sessionIds) {
         Assert.notEmpty sessionIds
-        println ">>>> delete attr by session ids "
 
         PersistentSessionAttribute.findAllBySessionIdInList(sessionIds)*.delete()
 	}
 
 	void removeAttribute(String sessionId, String name) {
-	    println ">>>> remove attr [$name] from [$sessionId]"
         PersistentSessionAttribute.findBySessionIdAndName(sessionId, name)?.delete(flush: true)
 	}
 
 	List<String> findAllAttributeNames(String sessionId) {
-        println ">>> find all by attr name"
         PersistentSessionAttribute.findAllBySessionId(sessionId)*.name
 	}
 
@@ -126,7 +120,6 @@ class PersistentSessionService {
 
     @PostConstruct
     void postConstruct() {
-        println "Initializing GormPersisterService."
         String databaseName = grailsApplication.config.grails.mongo.databaseName
 
         db = mongo.getDB(databaseName)

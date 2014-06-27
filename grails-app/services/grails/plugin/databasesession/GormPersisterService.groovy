@@ -12,31 +12,29 @@ import org.springframework.util.Assert
  * @author Burt Beckwith
  */
 class GormPersisterService implements Persister {
-    
-    static transactional = false
 
-    def db
+	static transactional = false
+
+	def db
 	def grailsApplication
-    def mongo
+	def mongo
 	def persistentSessionService
 
 	void create(String sessionId) {
-        println "Create session with $sessionId"
 		try {
 			if (PersistentSession.exists(sessionId)) {
 				return
 			}
-            Long creationTime = System.currentTimeMillis()
+			Long creationTime = System.currentTimeMillis()
 
-            db.persistentSession.insert([_id: sessionId, creationTime: creationTime,
-                lastAccessedTime: creationTime, maxInactiveInterval: 30, invalidated: false])
+			db.persistentSession.insert([_id: sessionId, creationTime: creationTime,
+				lastAccessedTime: creationTime, maxInactiveInterval: 30, invalidated: false])
 		} catch (e) {
 			handleException e
 		}
 	}
 
 	Object getAttribute(String sessionId, String name) throws InvalidatedSessionException {
-	    println "GET attribure [$name] from [$sessionId]"
 		if (name == null) return null
 
 		if (GrailsApplicationAttributes.FLASH_SCOPE == name) {
@@ -53,8 +51,7 @@ class GormPersisterService implements Persister {
 			session.lastAccessedTime = System.currentTimeMillis()
 
 			def attribute = persistentSessionService.deserializeAttributeValue(
-				persistentSessionService.findValueBySessionAndAttributeName(session, name)?.serialized)
-			println "GOT attribute [$name] with $attribute"
+					persistentSessionService.findValueBySessionAndAttributeName(session, name)?.serialized)
 
 			if (attribute != null && GrailsApplicationAttributes.FLASH_SCOPE == name) {
 				SessionProxyFilter.request.setAttribute(GrailsApplicationAttributes.FLASH_SCOPE, attribute)
@@ -66,20 +63,17 @@ class GormPersisterService implements Persister {
 			handleException e
 		}
 	}
-    
-    @PostConstruct
-    void postConstruct() {
-        println "Initializing GormPersisterService."
-        String databaseName = grailsApplication.config.grails.mongo.databaseName
 
-        db = mongo.getDB(databaseName)
-    }
+	@PostConstruct
+	void postConstruct() {
+		String databaseName = grailsApplication.config.grails.mongo.databaseName
+
+		db = mongo.getDB(databaseName)
+	}
 
 	void setAttribute(String sessionId, String name, value) throws InvalidatedSessionException {
 
 		Assert.notNull name, 'name parameter cannot be null'
-        println "SET attribute [$name] in [$sessionId] with $value"
-        println value?.dump()
 
 		if (value == null) {
 			removeAttribute sessionId, name
@@ -89,7 +83,6 @@ class GormPersisterService implements Persister {
 		// special case; use request scope and don't store in session, the filter will set it in the session at the end of the request
 		if (value != null && GrailsApplicationAttributes.FLASH_SCOPE == name) {
 			if (value != GrailsApplicationAttributes.FLASH_SCOPE) {
-                println ">>> special"
 				SessionProxyFilter.request.setAttribute(GrailsApplicationAttributes.FLASH_SCOPE, value)
 				return
 			}
@@ -103,12 +96,11 @@ class GormPersisterService implements Persister {
 			checkInvalidated session
 			session.lastAccessedTime = System.currentTimeMillis()
 
-            PersistentSessionAttribute sessionAttributeInstance =
-                    PersistentSessionAttribute.findOrCreateBySessionIdAndName(sessionId, name)
+			PersistentSessionAttribute sessionAttributeInstance =
+					PersistentSessionAttribute.findOrCreateBySessionIdAndName(sessionId, name)
 
 			sessionAttributeInstance.serialized = persistentSessionService.serializeAttributeValue(value)
 			sessionAttributeInstance.save(failOnError: true, flush: true)
-            println "SETTING attr [$name] $sessionAttributeInstance.id"
 		} catch (e) {
 			handleException e
 		}
@@ -117,16 +109,16 @@ class GormPersisterService implements Persister {
 	void removeAttribute(String sessionId, String name) throws InvalidatedSessionException {
 		if (name == null) return
 
-		try {
-			PersistentSession session = PersistentSession.get(sessionId)
-			checkInvalidated session
-			session.lastAccessedTime = System.currentTimeMillis()
+			try {
+				PersistentSession session = PersistentSession.get(sessionId)
+				checkInvalidated session
+				session.lastAccessedTime = System.currentTimeMillis()
 
-			persistentSessionService.removeAttribute sessionId, name
-		}
-		catch (e) {
-			handleException e
-		}
+				persistentSessionService.removeAttribute sessionId, name
+			}
+			catch (e) {
+				handleException e
+			}
 	}
 
 	List<String> getAttributeNames(String sessionId) throws InvalidatedSessionException {
@@ -143,7 +135,7 @@ class GormPersisterService implements Persister {
 			persistentSessionService.deleteValuesBySessionId sessionId
 			persistentSessionService.deleteAttributesBySessionId sessionId
 
-            // TODO Find alternative to lock
+			// TODO Find alternative to lock
 			//PersistentSession session = PersistentSession.lock(sessionId)
 			PersistentSession session = PersistentSession.get(sessionId)
 
