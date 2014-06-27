@@ -1,5 +1,7 @@
 package grails.plugin.databasesession;
 
+import grails.util.Environment;
+
 import java.io.IOException;
 import java.util.UUID;
 
@@ -159,8 +161,15 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 
 	protected Cookie newCookie(String sessionId, HttpServletRequest request) {
 		Cookie cookie = new Cookie(COOKIE_NAME, sessionId);
-		System.out.println("request server name: " + request.getServerName() + " | " + request.isSecure());
-		//cookie.setDomain(request.getServerName()); // TODO needs config option
+		/**
+		 * Chrome browser doesn't allow cookies to set domain for localhost domains.
+		 * 
+		 * @see https://code.google.com/p/chromium/issues/detail?id=56211
+		 * @see https://jira.grails.org/browse/GPDATABASESESSION-8
+		 */
+		if (!Environment.isDevelopmentMode() && request.getServerName() != "localhost") {
+			cookie.setDomain(request.getServerName()); // TODO needs config option
+		}
 		cookie.setPath(COOKIE_PATH);
 		cookie.setSecure(request.isSecure());
 		return cookie;
