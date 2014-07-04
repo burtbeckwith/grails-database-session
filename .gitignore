@@ -6,3 +6,5 @@ target
 .settings
 web-app
 /docs
+.classpath
+.project

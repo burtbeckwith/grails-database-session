@@ -1,5 +1,7 @@
 package grails.plugin.databasesession;
 
+import grails.util.Environment;
+
 import java.io.IOException;
 import java.util.UUID;
 
@@ -69,7 +71,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			final HttpServletResponse response) {
 
 		if (log.isDebugEnabled()) {
-			log.debug("Proxying request for {}", request.getRequestURL());
+			log.debug("Proxying request for {} {}", request.getRequestURL(), request.getServerName());
 		}
 
 		String sessionId = getCookieValue(request);
@@ -120,6 +122,12 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	}
 
 	protected Cookie getCookie(HttpServletRequest request) {
+		// no cookie, but if we're in the same request as when it was set it will be here
+		Cookie newCookie = (Cookie)request.getAttribute(REQUEST_COOKIE_KEY);
+		if (newCookie != null) {
+			return newCookie;
+		}
+
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
@@ -129,8 +137,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			}
 		}
 
-		// no cookie, but if we're in the same request as when it was set it will be here
-		return (Cookie)request.getAttribute(REQUEST_COOKIE_KEY);
+		return null;
 	}
 
 	protected String getCookieValue(HttpServletRequest request) {
@@ -142,18 +149,27 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 		Cookie cookie = getCookie(request);
 		if (cookie == null) {
 			log.debug("Created new session cookie {}", sessionId);
+			cookie = newCookie(sessionId, request);
 		}
 		else {
 			log.debug("Updating existing cookie with id {} to new value {}", cookie.getValue(), sessionId);
+			cookie.setValue(sessionId);
 		}
-		cookie = newCookie(sessionId, request);
 		response.addCookie(cookie);
 		request.setAttribute(REQUEST_COOKIE_KEY, cookie);
 	}
 
 	protected Cookie newCookie(String sessionId, HttpServletRequest request) {
 		Cookie cookie = new Cookie(COOKIE_NAME, sessionId);
-		cookie.setDomain(request.getServerName()); // TODO needs config option
+		/**
+		 * Chrome browser doesn't allow cookies to set domain for localhost domains.
+		 * 
+		 * @see https://code.google.com/p/chromium/issues/detail?id=56211
+		 * @see https://jira.grails.org/browse/GPDATABASESESSION-8
+		 */
+		if (!Environment.isDevelopmentMode() && request.getServerName() != "localhost") {
+			cookie.setDomain(request.getServerName()); // TODO needs config option
+		}
 		cookie.setPath(COOKIE_PATH);
 		cookie.setSecure(request.isSecure());
 		return cookie;
