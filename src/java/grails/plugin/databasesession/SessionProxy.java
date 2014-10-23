@@ -18,6 +18,7 @@ public class SessionProxy implements HttpSession {
 	private final String _sessionId;
 	private final long _creationTime = System.currentTimeMillis();
 	private final ServletContext _servletContext;
+	private final boolean _isNew;
 
 	private static final HttpSessionContext SESSION_CONTEXT = new HttpSessionContext() {
 		public HttpSession getSession(String sessionId) {
@@ -43,10 +44,11 @@ public class SessionProxy implements HttpSession {
 	 * @param persister the persister
 	 * @param sessionId session id
 	 */
-	public SessionProxy(final ServletContext servletContext, final Persister persister, String sessionId) {
+	public SessionProxy(final ServletContext servletContext, final Persister persister, String sessionId, boolean isNew) {
 		_servletContext = servletContext;
 		_persister = persister;
 		_sessionId = sessionId;
+		_isNew = isNew;
 	}
 
 	public Object getAttribute(String name) {
@@ -172,6 +174,6 @@ public class SessionProxy implements HttpSession {
 	}
 
 	public boolean isNew() {
-		return false; // TODO
+		return _isNew;
 	}
 }

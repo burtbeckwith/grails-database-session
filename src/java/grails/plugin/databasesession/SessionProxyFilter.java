@@ -83,13 +83,13 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 			// no session cookie but do create
 			log.debug("No session cookie but create is true, creating session");
 			sessionId = createSession(request, response);
-			return new SessionProxy(getServletContext(), persister, sessionId);
+			return new SessionProxy(getServletContext(), persister, sessionId, true);
 		}
 
 		if (persister.isValid(sessionId)) {
 			// session cookie and the session is still active
 			log.debug("Session cookie {} found", sessionId);
-			return new SessionProxy(getServletContext(), persister, sessionId);
+			return new SessionProxy(getServletContext(), persister, sessionId, false);
 		}
 
 		if (!create) {
@@ -104,7 +104,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 		log.debug("Session cookie {} found but invalid or old and create is true, creating session", sessionId);
 		persister.invalidate(sessionId); // cleanup if it's too old
 		sessionId = createSession(request, response);
-		return new SessionProxy(getServletContext(), persister, sessionId);
+		return new SessionProxy(getServletContext(), persister, sessionId, true);
 	}
 
 	protected String createSession(final HttpServletRequest request, final HttpServletResponse response) {
