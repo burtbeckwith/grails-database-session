@@ -10,7 +10,7 @@ buildscript {
 }
 
 version "0.1"
-group "database.sessio"
+group "org.grails.plugins"
 
 apply plugin: "eclipse"
 apply plugin: "idea"
@@ -29,13 +29,8 @@ dependencies {
     compile "org.grails:grails-core"
     compile "org.springframework.boot:spring-boot-starter-actuator"
     compile "org.springframework.boot:spring-boot-starter-tomcat"
+    compile "org.grails:grails-dependencies"
     compile "org.grails:grails-web-boot"
-    compile "org.grails:grails-logging"
-    compile "org.grails:grails-plugin-rest"
-    compile "org.grails:grails-plugin-databinding"
-    compile "org.grails:grails-plugin-services"
-    compile "org.grails:grails-plugin-url-mappings"
-    compile "org.grails:grails-plugin-interceptors"
     compile "org.grails.plugins:cache"
     compile "org.grails.plugins:quartz:2.0.12"
     console "org.grails:grails-console"
@@ -55,6 +50,7 @@ bootRun {
 }
 // enable if you wish to package this plugin as a standalone application
 bootRepackage.enabled = false
+
 grailsPublish {
     // TODO: Provide values here
     user = 'user'
@@ -69,7 +65,6 @@ grailsPublish {
     portalUser = ""
     portalPassword = ""
 }
-
 
 assets {
     packagePlugin = true

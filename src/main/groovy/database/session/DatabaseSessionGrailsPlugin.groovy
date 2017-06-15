@@ -49,6 +49,7 @@ Brief summary/description of the plugin.
                 return
             }
 
+            println "Enabling database session plugin"
             sessionProxyFilter(SessionProxyFilter) {
                 persister = ref('gormPersisterService')
             }

@@ -1,8 +1,11 @@
 package grails.plugin.databasesession
 
+import grails.gorm.transactions.Transactional
+
 /**
  * @author Burt Beckwith
  */
+@Transactional
 class DatabaseCleanupService {
 
 	def grailsApplication
