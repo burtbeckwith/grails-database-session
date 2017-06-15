@@ -32,6 +32,7 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	private static final ThreadLocal<HttpServletResponse> RESPONSE_HOLDER = new ThreadLocal<HttpServletResponse>();
 
 	private Persister persister;
+	private String cookieDomain;
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
 
@@ -159,7 +160,11 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 
 	protected Cookie newCookie(String sessionId, HttpServletRequest request) {
 		Cookie cookie = new Cookie(COOKIE_NAME, sessionId);
-		cookie.setDomain(request.getServerName()); // TODO needs config option
+		String domainName = cookieDomain;
+		if (domainName == null) {
+			domainName = request.getServerName();
+		}
+		cookie.setDomain(domainName);
 		cookie.setPath(COOKIE_PATH);
 		cookie.setSecure(request.isSecure());
 		return cookie;
@@ -183,6 +188,10 @@ public class SessionProxyFilter extends OncePerRequestFilter {
 	 */
 	public void setPersister(Persister persister) {
 		this.persister = persister;
+	}
+
+	public void setCookieDomain(String domain) {
+		this.cookieDomain = domain;
 	}
 
 	protected Persister getPersister() {
