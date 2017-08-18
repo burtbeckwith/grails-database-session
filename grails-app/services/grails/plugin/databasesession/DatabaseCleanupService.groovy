@@ -16,7 +16,6 @@ class DatabaseCleanupService {
 	 * the last accessed time is older than a cutoff value.
 	 */
 	void cleanup() {
-
 		def conf = grailsApplication.config.grails.plugin.databasesession
 		float maxAge = (conf.cleanup.maxAge ?: 30) as Float
 
@@ -27,9 +26,7 @@ class DatabaseCleanupService {
 			return
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug "using max age $maxAge minute(s), found old sessions to remove: $ids"
-		}
+		log.debug "using max age $maxAge minute(s), found old sessions to remove: $ids"
 
 		persistentSessionService.deleteValuesBySessionIds ids
 
