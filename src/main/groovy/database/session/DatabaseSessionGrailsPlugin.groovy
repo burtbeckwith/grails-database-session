@@ -5,6 +5,8 @@ import grails.plugins.*
 import grails.util.Environment
 import grails.util.Holders
 
+import javax.xml.ws.Holder
+
 class DatabaseSessionGrailsPlugin extends Plugin {
 
     // the version or versions of Grails the plugin is designed for
@@ -50,8 +52,11 @@ Brief summary/description of the plugin.
             }
 
             println "Enabling database session plugin"
+            String cookieDomainName = Holders.getFlatConfig()["grails.plugin.databasesession.cookie.domain"]
+
             sessionProxyFilter(SessionProxyFilter) {
                 persister = ref('gormPersisterService')
+                cookieDomain = cookieDomainName
             }
         }
     }
