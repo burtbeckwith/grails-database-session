@@ -1,19 +1,21 @@
 package grails.plugin.databasesession
 
+import grails.util.Holders
+
 /**
  * @author Burt Beckwith
  */
 class DatabaseCleanupJob {
 
-	def databaseCleanupService
-	def grailsApplication
+	DatabaseCleanupService databaseCleanupService
 
-	long timeout = 10 * 60 * 1000 // every 10 minutes
+	static triggers = {
+		simple repeatInterval: 10 * 60 * 1000l // execute job once in 10 minutes
+	}
 
-	void execute() {
-
-		def conf = grailsApplication.config.grails.plugin.databasesession
-		if (conf.cleanup.enabled instanceof Boolean && !conf.cleanup.enabled) {
+	def execute() {
+		Boolean enabled = Holders.getFlatConfig()["grails.plugin.databasesession.cleanup.enabled"]
+		if (!enabled) {
 			return
 		}
 

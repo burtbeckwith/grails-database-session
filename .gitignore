@@ -1,8 +1,11 @@
+Thumbs.db
+.DS_Store
 .gradle
-*.zip
-/plugin.xml
-*.log
-target
+build/
+.idea
+*.iml
+*.ipr
+*.iws
+.project
 .settings
-web-app
-/docs
+.classpath

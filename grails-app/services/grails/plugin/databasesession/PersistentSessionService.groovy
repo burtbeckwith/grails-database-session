@@ -1,11 +1,12 @@
 package grails.plugin.databasesession
 
-import org.springframework.transaction.annotation.Transactional
+import grails.gorm.transactions.Transactional
 import org.springframework.util.Assert
 
 /**
  * @author Burt Beckwith
  */
+@Transactional(readOnly = true)
 class PersistentSessionService {
 
 	def deserializeAttributeValue(byte[] serialized) {
@@ -48,7 +49,7 @@ class PersistentSessionService {
 			[sessionId: sessionId])
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void deleteValuesBySessionId(String sessionId) {
 		Assert.hasLength sessionId
 
@@ -58,7 +59,7 @@ class PersistentSessionService {
 			[sessionId: sessionId]))
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void deleteValuesBySessionIds(sessionIds) {
 		Assert.notEmpty sessionIds
 
@@ -68,7 +69,7 @@ class PersistentSessionService {
 			[sessionIds: sessionIds]))
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void removeValue(String sessionId, String name) {
 		Assert.hasLength sessionId
 		Assert.hasLength name
@@ -89,21 +90,21 @@ class PersistentSessionService {
 			[ids: ids])
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void deleteAttributesBySessionId(String sessionId) {
 		PersistentSession.executeUpdate(
 			'delete from PersistentSessionAttribute a where a.session.id=:sessionId',
 			[sessionId: sessionId])
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void deleteAttributesBySessionIds(sessionIds) {
 		PersistentSession.executeUpdate(
 			'delete from PersistentSessionAttribute a where a.session.id in (:sessionIds)',
 			[sessionIds: sessionIds])
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void removeAttribute(String sessionId, String name) {
 		PersistentSession.executeUpdate(
 			'delete from PersistentSessionAttribute psa ' +
@@ -124,7 +125,7 @@ class PersistentSessionService {
 			[age: age])
 	}
 
-	@Transactional
+	@Transactional(readOnly = false)
 	void deleteSessionsByIds(ids) {
 		PersistentSession.executeUpdate(
 			'delete from PersistentSession s where s.id in (:ids)',

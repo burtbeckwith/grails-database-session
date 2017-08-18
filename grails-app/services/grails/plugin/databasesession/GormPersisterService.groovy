@@ -1,14 +1,15 @@
 package grails.plugin.databasesession
 
+import grails.gorm.transactions.Transactional
 import grails.util.GrailsUtil
 import grails.validation.ValidationException
-
-import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes
+import org.grails.web.util.GrailsApplicationAttributes
 import org.springframework.util.Assert
 
 /**
  * @author Burt Beckwith
  */
+@Transactional
 class GormPersisterService implements Persister {
 
 	def grailsApplication
